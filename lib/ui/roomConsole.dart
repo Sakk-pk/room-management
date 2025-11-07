@@ -24,7 +24,7 @@ class RoomConsole {
         case 1:
           stdout.write('Capacity for general ward: ');
           final capacityInput = stdin.readLineSync()?.trim() ?? '';
-          final capacity = int.tryParse(capacityInput) ?? 10;
+          final capacity = int.tryParse(capacityInput) ?? 0;
           try {
             final room = Room(
               null,
