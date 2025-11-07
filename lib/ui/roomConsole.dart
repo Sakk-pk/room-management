@@ -120,7 +120,7 @@ class RoomConsole {
         case 3:
           dischargePatientConsole();
           break;
-        case 5:
+        case 4:
           final rooms = Room.getAllRooms();
           if (rooms.isEmpty) {
             stdout.writeln('No rooms created yet.');
@@ -130,10 +130,17 @@ class RoomConsole {
               stdout.writeln(
                 ' - ${r.roomId}: ${r.getAvailableBedCount()}/${r.capacity} available',
               );
+              // show bed-level status with patient name when occupied
+              for (var b in r.beds) {
+                final status = b.isOccupied
+                    ? 'occupied by ${b.currentPatient?.name}'
+                    : 'available';
+                stdout.writeln('    - ${b.bedId} ($status)');
+              }
             }
           }
           break;
-        case 6:
+        case 5:
           stdout.writeln('Exiting...');
           return;
         default:
@@ -200,19 +207,33 @@ class RoomConsole {
       return;
     }
 
-    stdout.write('Assign to a specific bed? (y/N): ');
+    stdout.write('Assign to a specific bed? (Y/N): ');
     final choice = (stdin.readLineSync() ?? '').trim().toLowerCase();
     try {
       if (choice == 'y') {
         stdout.writeln('Beds in ${targetRoom.roomId}:');
         for (var b in targetRoom.beds) {
-          stdout.writeln(' - ${b.bedId} (occupied: ${b.isOccupied})');
+          final status = b.isOccupied
+              ? 'occupied by ${b.currentPatient?.name}'
+              : 'available';
+          stdout.writeln(' - ${b.bedId} ($status)');
         }
-        stdout.write('Enter bed id: ');
-        final bedId = stdin.readLineSync()?.trim() ?? '';
+        stdout.write('Enter bed number: ');
+        final bedInput = stdin.readLineSync()?.trim() ?? '';
+        // If the user entered a simple number (e.g. "2"), convert it to the
+        // full bedId string used by the Room/Bed model:
+        // 'Room number: <roomId> - Bed number: <n>'
+        String bedId;
+        final maybeIndex = int.tryParse(bedInput);
+        if (maybeIndex != null) {
+          bedId =
+              'Room number: ${targetRoom.roomId} - Bed number: ${maybeIndex}';
+        } else {
+          bedId = bedInput;
+        }
         final assigned = targetRoom.assignPatientToBed(patient, bedId);
         stdout.writeln(
-          'Patient ${patient.name} assigned to ${assigned.bedId} in room ${targetRoom.roomId}.',
+          'Patient ${patient.name} assigned to ${assigned.bedId}.',
         );
       } else {
         final assigned = targetRoom.assignPatientToRoom(patient);
