@@ -14,7 +14,7 @@ class Room {
   static final Map<String, Room> _registry = {};
 
   Room(String? roomId, this.beds, {required this.type, this.capacity = 0})
-      : roomId = roomId ?? 'R00' + '${_idCounter++}';
+    : roomId = roomId ?? 'R00' + '${_idCounter++}';
 
   Room createRoom(RoomType? type, int capacity) {
     String roomNumber = roomId;
@@ -107,6 +107,93 @@ class Room {
     }
     throw ArgumentError('Patient $patientId not found.');
   }
+
+  /// Transfer a patient within this room to another bed in the same room.
+  void transferPatientToBed(String patientId, String toBedId) {
+    final currentBed = beds.firstWhere(
+      (bed) => bed.isOccupied && bed.currentPatient?.patientId == patientId,
+      orElse: () =>
+          throw ArgumentError('Patient $patientId not found in room $roomId.'),
+    );
+
+    final targetBed = beds.firstWhere(
+      (bed) => bed.bedId == toBedId,
+      orElse: () =>
+          throw ArgumentError('Bed $toBedId not found in room $roomId.'),
+    );
+
+    if (!targetBed.isAvailable()) {
+      throw ArgumentError('Bed $toBedId in room $roomId is already occupied.');
+    }
+
+    final patient = currentBed.currentPatient;
+    if (patient == null) {
+      throw StateError('Internal error: expected patient in current bed.');
+    }
+
+    currentBed.releasePatient();
+    targetBed.assignPatients(patient);
+  }
+
+  /// Transfer a patient (by id) to another room and bed, or to a bed in the same room.
+  /// Throws ArgumentError if patient/room/bed not found or if destination bed occupied.
+  static void transferPatient(
+    String patientId,
+    String toRoomId,
+    String toBedId,
+  ) {
+    // find source room that currently has the patient
+    final sourceRoom = _registry.values.firstWhere(
+      (r) => r.beds.any(
+        (b) => b.isOccupied && b.currentPatient?.patientId == patientId,
+      ),
+      orElse: () => throw ArgumentError(
+        'Patient $patientId not found in any registered room.',
+      ),
+    );
+
+    final targetRoom = _registry[toRoomId];
+    if (targetRoom == null) {
+      throw ArgumentError('Target room $toRoomId not found.');
+    }
+
+    if (sourceRoom.roomId == toRoomId) {
+      // same room transfer
+      sourceRoom.transferPatientToBed(patientId, toBedId);
+      return;
+    }
+
+    final sourceBed = sourceRoom.beds.firstWhere(
+      (b) => b.isOccupied && b.currentPatient?.patientId == patientId,
+      orElse: () => throw ArgumentError(
+        'Patient $patientId not found in room ${sourceRoom.roomId}.',
+      ),
+    );
+
+    final patient = sourceBed.currentPatient;
+    if (patient == null) {
+      throw StateError('Internal error: expected patient in source bed.');
+    }
+
+    final destBed = targetRoom.beds.firstWhere(
+      (b) => b.bedId == toBedId,
+      orElse: () =>
+          throw ArgumentError('Bed $toBedId not found in room $toRoomId.'),
+    );
+
+    if (!destBed.isAvailable()) {
+      throw ArgumentError(
+        'Bed $toBedId in room $toRoomId is already occupied.',
+      );
+    }
+
+    // perform move
+    sourceBed.releasePatient();
+    destBed.assignPatients(patient);
+  }
+
+  /// Helper to lookup a room by id
+  static Room? getRoom(String roomId) => _registry[roomId];
 
   static List<Room> getAllRooms() => _registry.values.toList();
 

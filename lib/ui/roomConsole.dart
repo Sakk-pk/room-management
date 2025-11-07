@@ -132,8 +132,21 @@ class RoomConsole {
           } else {
             stdout.writeln('Rooms:');
             for (var r in rooms) {
+              // Make a human-friendly room type string: e.g. GENERAL_WARD -> General Ward
+              final typeRaw = r.type.toString().split('.').last;
+              final typeStr = typeRaw
+                  .replaceAll('_', ' ')
+                  .toLowerCase()
+                  .split(' ')
+                  .map(
+                    (s) => s.isEmpty
+                        ? s
+                        : '${s[0].toUpperCase()}${s.substring(1)}',
+                  )
+                  .join(' ');
+
               stdout.writeln(
-                ' - ${r.roomId}: ${r.getAvailableBedCount()}/${r.capacity} available',
+                ' - ${r.roomId} ($typeStr): ${r.getAvailableBedCount()}/${r.capacity} available',
               );
               // show bed-level status with patient name when occupied
               for (var b in r.beds) {
@@ -183,8 +196,15 @@ class RoomConsole {
     stdout.writeln('\nAvailable rooms:');
     for (var i = 0; i < rooms.length; i++) {
       final r = rooms[i];
+      final typeRaw = r.type.toString().split('.').last;
+      final typeStr = typeRaw
+          .replaceAll('_', ' ')
+          .toLowerCase()
+          .split(' ')
+          .map((s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}')
+          .join(' ');
       stdout.writeln(
-        '${i + 1}. ${r.roomId} (${r.getAvailableBedCount()}/${r.capacity} available)',
+        '${i + 1}. ${r.roomId} ($typeStr) - ${r.getAvailableBedCount()}/${r.capacity} available',
       );
     }
 
@@ -207,8 +227,16 @@ class RoomConsole {
       return;
     }
 
+    final typeRaw = targetRoom.type.toString().split('.').last;
+    final typeStr = typeRaw
+        .replaceAll('_', ' ')
+        .toLowerCase()
+        .split(' ')
+        .map((s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}')
+        .join(' ');
+
     if (targetRoom.isFull()) {
-      stdout.writeln('Selected room is full.');
+      stdout.writeln('Selected room ${targetRoom.roomId} ($typeStr) is full.');
       return;
     }
 
@@ -216,7 +244,7 @@ class RoomConsole {
     final choice = (stdin.readLineSync() ?? '').trim().toLowerCase();
     try {
       if (choice == 'y') {
-        stdout.writeln('Beds in ${targetRoom.roomId}:');
+        stdout.writeln('Beds in ${targetRoom.roomId} ($typeStr):');
         for (var b in targetRoom.beds) {
           final status = b.isOccupied
               ? 'occupied by ${b.currentPatient?.name}'
@@ -238,12 +266,12 @@ class RoomConsole {
         }
         final assigned = targetRoom.assignPatientToBed(patient, bedId);
         stdout.writeln(
-          'Patient ${patient.name} assigned to ${assigned.bedId}.',
+          'Patient ${patient.name} assigned to ${assigned.bedId} in room ${targetRoom.roomId} ($typeStr).',
         );
       } else {
         final assigned = targetRoom.assignPatientToRoom(patient);
         stdout.writeln(
-          'Patient ${patient.name} assigned to ${assigned.bedId} in room ${targetRoom.roomId}.',
+          'Patient ${patient.name} assigned to ${assigned.bedId} in room ${targetRoom.roomId} ($typeStr).',
         );
       }
     } catch (e) {
@@ -274,7 +302,16 @@ class RoomConsole {
         ),
       );
       sourceRoom.dischargePatient(pid);
-      stdout.writeln('Patient $pid discharged from room ${sourceRoom.roomId}.');
+      final sTypeRaw = sourceRoom.type.toString().split('.').last;
+      final sTypeStr = sTypeRaw
+          .replaceAll('_', ' ')
+          .toLowerCase()
+          .split(' ')
+          .map((s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}')
+          .join(' ');
+      stdout.writeln(
+        'Patient $pid discharged from room ${sourceRoom.roomId} ($sTypeStr).',
+      );
     } catch (e) {
       stdout.writeln('Failed to discharge patient: $e');
     }
@@ -315,16 +352,30 @@ class RoomConsole {
       return;
     }
 
+    final srcTypeRaw = sourceRoom.type.toString().split('.').last;
+    final srcTypeStr = srcTypeRaw
+        .replaceAll('_', ' ')
+        .toLowerCase()
+        .split(' ')
+        .map((s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}')
+        .join(' ');
     stdout.writeln(
-      'Patient found in room ${sourceRoom.roomId}, bed ${sourceBed.bedId}.',
+      'Patient found in room ${sourceRoom.roomId} ($srcTypeStr), bed ${sourceBed.bedId}.',
     );
 
     // choose destination room
     stdout.writeln('\nAvailable rooms:');
     for (var i = 0; i < rooms.length; i++) {
       final r = rooms[i];
+      final typeRaw = r.type.toString().split('.').last;
+      final typeStr = typeRaw
+          .replaceAll('_', ' ')
+          .toLowerCase()
+          .split(' ')
+          .map((s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}')
+          .join(' ');
       stdout.writeln(
-        '${i + 1}. ${r.roomId} (${r.getAvailableBedCount()}/${r.capacity} available)',
+        '${i + 1}. ${r.roomId} ($typeStr) - ${r.getAvailableBedCount()}/${r.capacity} available',
       );
     }
 
@@ -340,7 +391,14 @@ class RoomConsole {
     }
 
     // pick bed in target room
-    stdout.writeln('Beds in ${targetRoom.roomId}:');
+    final tTypeRaw = targetRoom.type.toString().split('.').last;
+    final tTypeStr = tTypeRaw
+        .replaceAll('_', ' ')
+        .toLowerCase()
+        .split(' ')
+        .map((s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}')
+        .join(' ');
+    stdout.writeln('Beds in ${targetRoom.roomId} ($tTypeStr):');
     for (var b in targetRoom.beds) {
       final status = b.isOccupied
           ? 'occupied by ${b.currentPatient?.name}'
@@ -364,31 +422,14 @@ class RoomConsole {
       destBedId = bedInput;
     }
 
-    // find destination bed
-    Bed? destBed;
+    // perform transfer via domain API (will validate existence/availability)
     try {
-      destBed = targetRoom.beds.firstWhere((b) => b.bedId == destBedId);
+      Room.transferPatient(pid, targetRoom.roomId, destBedId);
+      stdout.writeln(
+        'Patient $pid transferred to bed $destBedId in room ${targetRoom.roomId} ($tTypeStr).',
+      );
     } catch (e) {
-      stdout.writeln('Destination bed not found.');
-      return;
+      stdout.writeln('Transfer failed: $e');
     }
-
-    if (!destBed.isAvailable()) {
-      stdout.writeln('Destination bed is already occupied.');
-      return;
-    }
-
-    final patient = sourceBed.currentPatient;
-    if (patient == null) {
-      stdout.writeln('Internal error: patient data missing.');
-      return;
-    }
-
-    // perform transfer
-    sourceBed.releasePatient();
-    destBed.assignPatients(patient);
-    stdout.writeln(
-      'Patient ${patient.name} transferred to ${destBed.bedId} in room ${targetRoom.roomId}.',
-    );
   }
 }
