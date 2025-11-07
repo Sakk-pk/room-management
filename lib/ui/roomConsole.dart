@@ -41,12 +41,15 @@ class RoomConsole {
 
       switch (choiceCnr) {
         case 1:
+          stdout.write('Capacity for general ward: ');
+          final capacityInput = stdin.readLineSync()?.trim() ?? '';
+          final capacity = int.tryParse(capacityInput) ?? 10;
           try {
             final room = Room(
               null,
               [],
               type: RoomType.GENERAL_WARD,
-            ).createRoom(RoomType.GENERAL_WARD, 10);
+            ).createRoom(RoomType.GENERAL_WARD, capacity);
             stdout.writeln(
               'Created general ward room ${room.roomId} with capacity ${room.capacity}.',
             );
@@ -61,7 +64,7 @@ class RoomConsole {
               [],
               type: RoomType.PRIVATE_ROOM,
             ).privateRoom();
-            stdout.writeln('Created private room ${room.roomId}');
+            stdout.writeln('Created private room ${room.roomId} with capacity ${room.capacity}.');
           } catch (e) {
             stdout.writeln('Failed to create room: $e');
           }
@@ -73,7 +76,7 @@ class RoomConsole {
               [],
               type: RoomType.EMERGENCY,
             ).emergencyRoom();
-            stdout.writeln('Created emergency room ${room.roomId}');
+            stdout.writeln('Created emergency room ${room.roomId} with capacity ${room.capacity}.');
           } catch (e) {
             stdout.writeln('Failed to create room: $e');
           }
@@ -85,7 +88,7 @@ class RoomConsole {
               [],
               type: RoomType.OPERATING_ROOM,
             ).operatingRoom();
-            stdout.writeln('Created operating room ${room.roomId}');
+            stdout.writeln('Created operating room ${room.roomId} with capacity ${room.capacity}.');
           } catch (e) {
             stdout.writeln('Failed to create room: $e');
           }
@@ -93,7 +96,7 @@ class RoomConsole {
         case 5:
           try {
             final room = Room(null, [], type: RoomType.ICU).icuRoom();
-            stdout.writeln('Created ICU room ${room.roomId}');
+            stdout.writeln('Created ICU room ${room.roomId} with capacity ${room.capacity}.');
           } catch (e) {
             stdout.writeln('Failed to create room: $e');
           }
@@ -121,13 +124,13 @@ class RoomConsole {
 
       switch (choice) {
         case 1:
-          addPatient();
-          break;
-        case 2:
           createNewRoom();
           break;
-        case 3:
+        case 2:
           assignRoomForPatient();
+          break;
+        case 3:
+          dischargePatientConsole();
           break;
         case 4:
           stdout.writeln('Feature not implemented yet.');
@@ -185,7 +188,7 @@ class RoomConsole {
       );
     }
 
-    stdout.write('Choose room by number or enter room id: ');
+    stdout.write('Choose room by number: ');
     final roomChoice = stdin.readLineSync()?.trim() ?? '';
     Room? targetRoom;
     final idx = int.tryParse(roomChoice);
@@ -231,6 +234,35 @@ class RoomConsole {
       }
     } catch (e) {
       stdout.writeln('Failed to assign patient: $e');
+    }
+  }
+
+  void dischargePatientConsole() {
+    stdout.writeln('\n--- Discharge Patient ---');
+
+    stdout.write('Enter patient id to discharge: ');
+    final pid = stdin.readLineSync()?.trim() ?? '';
+    if (pid.isEmpty) {
+      stdout.writeln('Patient id is required.');
+      return;
+    }
+
+    final rooms = Room.getAllRooms();
+    if (rooms.isEmpty) {
+      stdout.writeln('No rooms available.');
+      return;
+    }
+
+    try {
+      final sourceRoom = rooms.firstWhere(
+        (r) => r.beds.any(
+          (b) => b.isOccupied && b.currentPatient?.patientId == pid,
+        ),
+      );
+      sourceRoom.dischargePatient(pid);
+      stdout.writeln('Patient $pid discharged from room ${sourceRoom.roomId}.');
+    } catch (e) {
+      stdout.writeln('Failed to discharge patient: $e');
     }
   }
 }

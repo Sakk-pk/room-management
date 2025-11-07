@@ -4,7 +4,8 @@ import 'patient.dart';
 enum RoomType { GENERAL_WARD, PRIVATE_ROOM, ICU, EMERGENCY, OPERATING_ROOM }
 
 class Room {
-  static int _idCounter = 0;
+  // start IDs from 1
+  static int _idCounter = 1;
   final String roomId;
   final RoomType type;
   int capacity;
@@ -13,7 +14,7 @@ class Room {
   static final Map<String, Room> _registry = {};
 
   Room(String? roomId, this.beds, {required this.type, this.capacity = 0})
-    : roomId = roomId ?? 'R00${_idCounter++}';
+      : roomId = roomId ?? 'R00' + '${_idCounter++}';
 
   Room createRoom(RoomType? type, int capacity) {
     String roomNumber = roomId;
@@ -36,7 +37,7 @@ class Room {
     final room = Room(
       roomNumber,
       beds,
-      type: RoomType.GENERAL_WARD,
+      type: type ?? RoomType.GENERAL_WARD,
       capacity: capacity,
     );
     _registry[roomNumber] = room;
