@@ -1,5 +1,6 @@
 import 'dart:io';
 import '../domian/patient.dart';
+import '../domian/bed.dart';
 import '../domian/room.dart';
 
 class RoomConsole {
@@ -103,9 +104,10 @@ class RoomConsole {
       print('--- Room Management ---\n');
       print('1. Create new room');
       print('2. Assign room for patient');
-      print('3. Discharge patient');
-      print('4. Check for available room');
-      print('5. Exit the program');
+      print('3. Transfer patient');
+      print('4. Discharge patient');
+      print('5. Check for available room');
+      print('6. Exit the program');
       stdout.write('Choice: ');
       final choiceInput = stdin.readLineSync()?.trim() ?? '';
       final choice = int.tryParse(choiceInput) ?? 0;
@@ -118,9 +120,12 @@ class RoomConsole {
           assignRoomForPatient();
           break;
         case 3:
-          dischargePatientConsole();
+          transferPatientConsole();
           break;
         case 4:
+          dischargePatientConsole();
+          break;
+        case 5:
           final rooms = Room.getAllRooms();
           if (rooms.isEmpty) {
             stdout.writeln('No rooms created yet.');
@@ -140,7 +145,7 @@ class RoomConsole {
             }
           }
           break;
-        case 5:
+        case 6:
           stdout.writeln('Exiting...');
           return;
         default:
@@ -273,5 +278,117 @@ class RoomConsole {
     } catch (e) {
       stdout.writeln('Failed to discharge patient: $e');
     }
+  }
+
+  void transferPatientConsole() {
+    stdout.writeln('\n--- Transfer Patient ---');
+
+    stdout.write('Enter patient id to transfer: ');
+    final pid = stdin.readLineSync()?.trim() ?? '';
+    if (pid.isEmpty) {
+      stdout.writeln('Patient id is required.');
+      return;
+    }
+
+    final rooms = Room.getAllRooms();
+    if (rooms.isEmpty) {
+      stdout.writeln('No rooms available.');
+      return;
+    }
+
+    // locate source room and bed
+    Room? sourceRoom;
+    Bed? sourceBed;
+    for (var r in rooms) {
+      for (var b in r.beds) {
+        if (b.isOccupied && b.currentPatient?.patientId == pid) {
+          sourceRoom = r;
+          sourceBed = b;
+          break;
+        }
+      }
+      if (sourceRoom != null) break;
+    }
+
+    if (sourceRoom == null || sourceBed == null) {
+      stdout.writeln('Patient $pid not found in any room.');
+      return;
+    }
+
+    stdout.writeln(
+      'Patient found in room ${sourceRoom.roomId}, bed ${sourceBed.bedId}.',
+    );
+
+    // choose destination room
+    stdout.writeln('\nAvailable rooms:');
+    for (var i = 0; i < rooms.length; i++) {
+      final r = rooms[i];
+      stdout.writeln(
+        '${i + 1}. ${r.roomId} (${r.getAvailableBedCount()}/${r.capacity} available)',
+      );
+    }
+
+    stdout.write('Choose destination room by number: ');
+    final roomChoice = stdin.readLineSync()?.trim() ?? '';
+    final idx = int.tryParse(roomChoice);
+    Room? targetRoom;
+    if (idx != null && idx > 0 && idx <= rooms.length) {
+      targetRoom = rooms[idx - 1];
+    } else {
+      stdout.writeln('Invalid room selection.');
+      return;
+    }
+
+    // pick bed in target room
+    stdout.writeln('Beds in ${targetRoom.roomId}:');
+    for (var b in targetRoom.beds) {
+      final status = b.isOccupied
+          ? 'occupied by ${b.currentPatient?.name}'
+          : 'available';
+      stdout.writeln(' - ${b.bedId} ($status)');
+    }
+
+    stdout.write('Enter destination bed number (or full id): ');
+    final bedInput = stdin.readLineSync()?.trim() ?? '';
+    if (bedInput.isEmpty) {
+      stdout.writeln('Bed selection required.');
+      return;
+    }
+
+    String destBedId;
+    final maybeIndex = int.tryParse(bedInput);
+    if (maybeIndex != null) {
+      destBedId =
+          'Room number: ${targetRoom.roomId} - Bed number: ${maybeIndex}';
+    } else {
+      destBedId = bedInput;
+    }
+
+    // find destination bed
+    Bed? destBed;
+    try {
+      destBed = targetRoom.beds.firstWhere((b) => b.bedId == destBedId);
+    } catch (e) {
+      stdout.writeln('Destination bed not found.');
+      return;
+    }
+
+    if (!destBed.isAvailable()) {
+      stdout.writeln('Destination bed is already occupied.');
+      return;
+    }
+
+    final patient = sourceBed.currentPatient;
+    if (patient == null) {
+      stdout.writeln('Internal error: patient data missing.');
+      return;
+    }
+
+    // perform transfer
+    sourceBed.releasePatient();
+    destBed.assignPatients(patient);
+    stdout.writeln(
+      'Patient ${patient.name} transferred to ${destBed.bedId} in room ${targetRoom.roomId}.',
+    );
   }
 }
