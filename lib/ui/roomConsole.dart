@@ -6,26 +6,6 @@ class RoomConsole {
   int id = 0;
   RoomConsole();
 
-  void addPatient() {
-    print('\n--- Add Patient ---');
-    final pid = 'P00${++id}';
-
-    stdout.write('Name: ');
-    final name = stdin.readLineSync()?.trim() ?? '';
-
-    stdout.write('Age: ');
-    final ageInput = stdin.readLineSync()?.trim() ?? '';
-    final age = int.tryParse(ageInput) ?? 0;
-
-    stdout.write('Gender: ');
-    final gender = stdin.readLineSync()?.trim() ?? '';
-
-    Patient patient = new Patient(pid, name: name, age: age, gender: gender);
-    print(
-      'New patient add successfully name: ${patient.name}, id: ${patient.patientId}',
-    );
-  }
-
   void createNewRoom() {
     while (true) {
       print('--- Create New Room ---\n');
@@ -64,7 +44,9 @@ class RoomConsole {
               [],
               type: RoomType.PRIVATE_ROOM,
             ).privateRoom();
-            stdout.writeln('Created private room ${room.roomId} with capacity ${room.capacity}.');
+            stdout.writeln(
+              'Created private room ${room.roomId} with capacity ${room.capacity}.',
+            );
           } catch (e) {
             stdout.writeln('Failed to create room: $e');
           }
@@ -76,7 +58,9 @@ class RoomConsole {
               [],
               type: RoomType.EMERGENCY,
             ).emergencyRoom();
-            stdout.writeln('Created emergency room ${room.roomId} with capacity ${room.capacity}.');
+            stdout.writeln(
+              'Created emergency room ${room.roomId} with capacity ${room.capacity}.',
+            );
           } catch (e) {
             stdout.writeln('Failed to create room: $e');
           }
@@ -88,7 +72,9 @@ class RoomConsole {
               [],
               type: RoomType.OPERATING_ROOM,
             ).operatingRoom();
-            stdout.writeln('Created operating room ${room.roomId} with capacity ${room.capacity}.');
+            stdout.writeln(
+              'Created operating room ${room.roomId} with capacity ${room.capacity}.',
+            );
           } catch (e) {
             stdout.writeln('Failed to create room: $e');
           }
@@ -96,7 +82,9 @@ class RoomConsole {
         case 5:
           try {
             final room = Room(null, [], type: RoomType.ICU).icuRoom();
-            stdout.writeln('Created ICU room ${room.roomId} with capacity ${room.capacity}.');
+            stdout.writeln(
+              'Created ICU room ${room.roomId} with capacity ${room.capacity}.',
+            );
           } catch (e) {
             stdout.writeln('Failed to create room: $e');
           }
@@ -131,9 +119,6 @@ class RoomConsole {
           break;
         case 3:
           dischargePatientConsole();
-          break;
-        case 4:
-          stdout.writeln('Feature not implemented yet.');
           break;
         case 5:
           final rooms = Room.getAllRooms();
@@ -173,6 +158,9 @@ class RoomConsole {
     final gender = stdin.readLineSync()?.trim() ?? '';
 
     final patient = Patient(pid, name: name, age: age, gender: gender);
+    print(
+      'New patient add successfully name: ${patient.name}, id: ${patient.patientId}',
+    );
 
     final rooms = Room.getAllRooms();
     if (rooms.isEmpty) {
