@@ -99,74 +99,7 @@ class RoomConsole {
     }
   }
 
-  void consoleRoomManagement() {
-    while (true) {
-      print('--- Room Management ---\n');
-      print('1. Create new room');
-      print('2. Assign room for patient');
-      print('3. Transfer patient');
-      print('4. Discharge patient');
-      print('5. Check for available room');
-      print('6. Exit the program');
-      stdout.write('Choice: ');
-      final choiceInput = stdin.readLineSync()?.trim() ?? '';
-      final choice = int.tryParse(choiceInput) ?? 0;
-
-      switch (choice) {
-        case 1:
-          createNewRoom();
-          break;
-        case 2:
-          assignRoomForPatient();
-          break;
-        case 3:
-          transferPatientConsole();
-          break;
-        case 4:
-          dischargePatientConsole();
-          break;
-        case 5:
-          final rooms = Room.getAllRooms();
-          if (rooms.isEmpty) {
-            stdout.writeln('No rooms created yet.');
-          } else {
-            stdout.writeln('Rooms:');
-            for (var r in rooms) {
-              // Make a human-friendly room type string: e.g. GENERAL_WARD -> General Ward
-              final typeRaw = r.type.toString().split('.').last;
-              final typeStr = typeRaw
-                  .replaceAll('_', ' ')
-                  .toLowerCase()
-                  .split(' ')
-                  .map(
-                    (s) => s.isEmpty
-                        ? s
-                        : '${s[0].toUpperCase()}${s.substring(1)}',
-                  )
-                  .join(' ');
-
-              stdout.writeln(
-                ' - ${r.roomId} ($typeStr): ${r.getAvailableBedCount()}/${r.capacity} available',
-              );
-              // show bed-level status with patient name when occupied
-              for (var b in r.beds) {
-                final status = b.isOccupied
-                    ? 'occupied by ${b.currentPatient?.name}'
-                    : 'available';
-                stdout.writeln('    - ${b.bedId} ($status)');
-              }
-            }
-          }
-          break;
-        case 6:
-          stdout.writeln('Exiting...');
-          return;
-        default:
-          stdout.writeln('Invalid choice. Please select 1-6.');
-      }
-    }
-  }
-
+  
   void assignRoomForPatient() {
     stdout.writeln('\n--- Assign Room for Patient ---');
 
@@ -430,6 +363,74 @@ class RoomConsole {
       );
     } catch (e) {
       stdout.writeln('Transfer failed: $e');
+    }
+  }
+
+  void consoleRoomManagement() {
+    while (true) {
+      print('--- Room Management ---\n');
+      print('1. Create new room');
+      print('2. Assign room for patient');
+      print('3. Transfer patient');
+      print('4. Discharge patient');
+      print('5. Check for available room');
+      print('6. Exit the program');
+      stdout.write('Choice: ');
+      final choiceInput = stdin.readLineSync()?.trim() ?? '';
+      final choice = int.tryParse(choiceInput) ?? 0;
+
+      switch (choice) {
+        case 1:
+          createNewRoom();
+          break;
+        case 2:
+          assignRoomForPatient();
+          break;
+        case 3:
+          transferPatientConsole();
+          break;
+        case 4:
+          dischargePatientConsole();
+          break;
+        case 5:
+          final rooms = Room.getAllRooms();
+          if (rooms.isEmpty) {
+            stdout.writeln('No rooms created yet.');
+          } else {
+            stdout.writeln('Rooms:');
+            for (var r in rooms) {
+              // Make a human-friendly room type string: e.g. GENERAL_WARD -> General Ward
+              final typeRaw = r.type.toString().split('.').last;
+              final typeStr = typeRaw
+                  .replaceAll('_', ' ')
+                  .toLowerCase()
+                  .split(' ')
+                  .map(
+                    (s) => s.isEmpty
+                        ? s
+                        : '${s[0].toUpperCase()}${s.substring(1)}',
+                  )
+                  .join(' ');
+
+              stdout.writeln(
+                ' - ${r.roomId} ($typeStr): ${r.getAvailableBedCount()}/${r.capacity} available',
+              );
+              // show bed-level status with patient name when occupied
+              for (var b in r.beds) {
+                final status = b.isOccupied
+                    ? 'occupied by ${b.currentPatient?.name}'
+                    : 'available';
+                stdout.writeln('    - ${b.bedId} ($status)');
+              }
+            }
+          }
+          break;
+        case 6:
+          stdout.writeln('Exiting...');
+          return;
+        default:
+          stdout.writeln('Invalid choice. Please select 1-6.');
+      }
     }
   }
 }

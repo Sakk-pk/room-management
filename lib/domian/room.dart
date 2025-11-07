@@ -108,7 +108,6 @@ class Room {
     throw ArgumentError('Patient $patientId not found.');
   }
 
-  /// Transfer a patient within this room to another bed in the same room.
   void transferPatientToBed(String patientId, String toBedId) {
     final currentBed = beds.firstWhere(
       (bed) => bed.isOccupied && bed.currentPatient?.patientId == patientId,
