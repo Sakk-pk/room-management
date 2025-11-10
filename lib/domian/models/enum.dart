@@ -1,0 +1,5 @@
+enum RoomType { GENERAL_ROOM, PRIVATE_ROOM, ICU, EMERGENCY, OPERATING_ROOM }
+
+enum BedStatus { OCCUPIED, AVAILABLE }
+
+enum PatientGender { MALE, FEMALE }
